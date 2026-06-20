@@ -1,4 +1,5 @@
-import 'package:attendance/home_page.dart';
+import 'package:attendance/view/dashboard.dart';
+import 'package:attendance/view/home_page.dart';
 import 'package:flutter/material.dart';
 import 'dart:async';
 
@@ -29,10 +30,10 @@ class _SplashScreenState extends State<SplashScreen>
     ).animate(CurvedAnimation(parent: _controller, curve: Curves.easeInOut));
 
     // 🔥 3 sec delay → Navigate
-    Timer(Duration(seconds: 5), () {
+    Timer(Duration(seconds: 3), () {
       Navigator.pushReplacement(
         context,
-        MaterialPageRoute(builder: (context) => HomePage()),
+        MaterialPageRoute(builder: (context) => Dashboard()),
       );
     });
   }

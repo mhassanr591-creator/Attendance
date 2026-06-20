@@ -1,5 +1,6 @@
-import 'package:attendance/student_detail_page.dart';
-import 'package:attendance/student_profile.dart';
+import 'package:attendance/component/navbar.dart';
+import 'package:attendance/view/student_detail_page.dart';
+import 'package:attendance/view/student_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
@@ -46,14 +47,29 @@ class _HomePageState extends State<HomePage> {
           Padding(
             padding: const EdgeInsets.only(right: 20),
             child: ElevatedButton(
-              onPressed: () => Navigator.pushNamed(context, '/add_student'),
-              child: Icon(Icons.person_add_alt_1, color: Colors.blue),
+              onPressed: () async {
+                // String today = "2026-03-25";
+                String today = DateTime.now().toIso8601String().split('T')[0];
+
+                await FirebaseFirestore.instance
+                    .collection('attendance')
+                    .doc(today)
+                    .set(attendanceMap); // {studentId: status}
+
+                ScaffoldMessenger.of(context).showSnackBar(
+                  SnackBar(content: Text("Attendance Submitted!")),
+                );
+              },
+              child: Icon(Icons.done, color: Colors.blue),
             ),
           ),
         ],
       ),
       body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance.collection('students').snapshots(),
+        stream: FirebaseFirestore.instance
+    .collection('students')
+    .where('isArchived', isEqualTo: false)
+    .snapshots(),
         builder: (context, snapshot) {
           if (!snapshot.hasData) return CircularProgressIndicator();
           // var students = snapshot.data!.docs;
@@ -94,7 +110,25 @@ class _HomePageState extends State<HomePage> {
                     return Card(
                       color: Colors.white,
                       child: ListTile(
-                        onTap: () {},
+                        onLongPress: () {
+                          showModalBottomSheet(
+                            context: context,
+                            builder: (context) {
+                              return ListTile(
+                                leading: Icon(Icons.archive),
+                                title: Text("Archive Student"),
+                                onTap: () async {
+                                  await FirebaseFirestore.instance
+                                      .collection('students')
+                                      .doc(student.id)
+                                      .update({'isArchived': true});
+
+                                  Navigator.pop(context);
+                                },
+                              );
+                            },
+                          );
+                        },
                         title: Row(
                           mainAxisAlignment: MainAxisAlignment.spaceBetween,
                           children: [
@@ -132,6 +166,7 @@ class _HomePageState extends State<HomePage> {
                                               studentName: student['name'],
                                               studendNumber: student['number'],
                                               studendDate: student['datetime'],
+                                              studentDob: student['DOB'],
                                               studendGender: student['gender'],
                                               // studentImage: student['image'],
                                             ),
@@ -153,7 +188,7 @@ class _HomePageState extends State<HomePage> {
                                               color: Colors.blue,
                                             ),
                                           ),
-                                          SizedBox(width: 5,),
+                                          SizedBox(width: 5),
                                           Text(
                                             studentName,
                                             style: TextStyle(
@@ -258,95 +293,64 @@ class _HomePageState extends State<HomePage> {
                   },
                 ),
               ),
-
-              Row(
-                mainAxisAlignment: MainAxisAlignment.spaceAround,
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 5),
-                    child: GestureDetector(
-                      onTap: () async {
-                        // String today = "2026-03-25";
-                        String today =
-                            DateTime.now().toIso8601String().split('T')[0];
-
-                        await FirebaseFirestore.instance
-                            .collection('attendance')
-                            .doc(today)
-                            .set(attendanceMap); // {studentId: status}
-
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          SnackBar(content: Text("Attendance Submitted!")),
-                        );
-                      },
-                      child: Container(
-                        decoration: BoxDecoration(
-                          color: Colors.blue,
-                          borderRadius: BorderRadius.circular(20),
-                        ),
-                        child: Padding(
-                          padding: const EdgeInsets.symmetric(
-                            horizontal: 100,
-                            vertical: 20,
-                          ),
-                          child: Text(
-                            "Submit",
-                            style: TextStyle(color: Colors.white),
-                          ),
-                        ),
-                      ),
-                    ),
-                  ),
-                  // Padding(
-                  //   padding: const EdgeInsets.only(right: 20),
-                  //   child: ElevatedButton(
-                  //     onPressed:
-                  //         () => Navigator.pushNamed(context, '/add_student'),
-                  //     child: Icon(Icons.person_add_alt_1, color: Colors.blue),
-                  //   ),
-                  // ),
-                ],
-              ),
             ],
           );
         },
       ),
+      bottomNavigationBar: Navbar(type: "Student"),
     );
   }
 }
 
-// void _confirmDelete(String studentId, context) {
-//   showDialog(
-//     context: context,
-//     builder: (context) {
-//       return AlertDialog(
-//         title: Text("Delete Student"),
-//         content: Text("Are you sure you want to delete this student?"),
-//         actions: [
-//           TextButton(
-//             onPressed: () => Navigator.pop(context),
-//             child: Text("Cancel"),
-//           ),
-//           TextButton(
-//             onPressed: () async {
-//               Navigator.pop(context);
-//               await _deleteStudent(studentId, context);
-//             },
-//             child: Text("Delete", style: TextStyle(color: Colors.red)),
-//           ),
-//         ],
-//       );
-//     },
-//   );
-// }
 
-// Future<void> _deleteStudent(String studentId, context) async {
-//   await FirebaseFirestore.instance
-//       .collection('students')
-//       .doc(studentId)
-//       .delete();
 
-//   ScaffoldMessenger.of(
-//     context,
-//   ).showSnackBar(SnackBar(content: Text("Student deleted")));
-// }
+
+
+   // Row(
+              //   mainAxisAlignment: MainAxisAlignment.spaceAround,
+              //   children: [
+              //     Padding(
+              //       padding: const EdgeInsets.symmetric(vertical: 5),
+              //       child: GestureDetector(
+              //         onTap: () async {
+              //           // String today = "2026-03-25";
+              //           String today =
+              //               DateTime.now().toIso8601String().split('T')[0];
+
+              //           await FirebaseFirestore.instance
+              //               .collection('attendance')
+              //               .doc(today)
+              //               .set(attendanceMap); // {studentId: status}
+
+              //           ScaffoldMessenger.of(context).showSnackBar(
+              //             SnackBar(content: Text("Attendance Submitted!")),
+              //           );
+              //         },
+              //         child: Container(
+              //           decoration: BoxDecoration(
+              //             color: Colors.blue,
+              //             borderRadius: BorderRadius.circular(20),
+              //           ),
+              //           child: Padding(
+              //             padding: const EdgeInsets.symmetric(
+              //               horizontal: 100,
+              //               vertical: 20,
+              //             ),
+              //             child: Text(
+              //               "Submit",
+              //               style: TextStyle(color: Colors.white),
+              //             ),
+              //           ),
+              //         ),
+              //       ),
+              //     ),
+              //     // Padding(
+              //     //   padding: const EdgeInsets.only(right: 20),
+              //     //   child: ElevatedButton(
+              //     //     onPressed:
+              //     //         () => Navigator.pushNamed(context, '/add_student'),
+              //     //     child: Icon(Icons.person_add_alt_1, color: Colors.blue),
+              //     //   ),
+              //     // ),
+              //   ],
+              // ),

@@ -1,5 +1,5 @@
-import 'package:attendance/add_student_page.dart';
-import 'package:attendance/splash_screen.dart';
+import 'package:attendance/view/add_student_page.dart';
+import 'package:attendance/view/splash_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
 import 'firebase_options.dart';
