@@ -1,6 +1,8 @@
-import 'package:attendance/component/navbar.dart';
+import 'dart:ui';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
+
+import 'package:attendance/component/navbar.dart';
 
 class AddStudentPage extends StatefulWidget {
   const AddStudentPage({super.key});
@@ -30,21 +32,41 @@ class _AddStudentPageState extends State<AddStudentPage> {
     super.dispose();
   }
 
+  /// 🌌 GLASS CARD
+  Widget glassBox({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.all(16),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(20),
+            border: Border.all(color: Colors.white.withOpacity(0.12)),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
   Future<void> _pickJoiningDate() async {
     DateTime? picked = await showDatePicker(
       context: context,
       initialDate: DateTime.now(),
       firstDate: DateTime(2000),
       lastDate: DateTime(2100),
-        builder: (context, child) {
+      builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue, // Header color
-              onPrimary: Colors.white, // Header text color
-              onSurface: Colors.black, // Calendar text color
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.blueAccent,
+              onPrimary: Colors.white,
+              surface: Color(0xFF0F172A),
+              onSurface: Colors.white,
             ),
-            dialogBackgroundColor: Colors.white, // Background
+            dialogBackgroundColor: const Color(0xFF0F172A),
           ),
           child: child!,
         );
@@ -66,15 +88,16 @@ class _AddStudentPageState extends State<AddStudentPage> {
       initialDate: DateTime(2010),
       firstDate: DateTime(1950),
       lastDate: DateTime.now(),
-        builder: (context, child) {
+      builder: (context, child) {
         return Theme(
           data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue, // Header color
-              onPrimary: Colors.white, // Header text color
-              onSurface: Colors.black, // Calendar text color
+            colorScheme: const ColorScheme.dark(
+              primary: Colors.blueAccent,
+              onPrimary: Colors.white,
+              surface: Color(0xFF0F172A),
+              onSurface: Colors.white,
             ),
-            dialogBackgroundColor: Colors.white, // Background
+            dialogBackgroundColor: const Color(0xFF0F172A),
           ),
           child: child!,
         );
@@ -102,9 +125,7 @@ class _AddStudentPageState extends State<AddStudentPage> {
     }
 
     try {
-      setState(() {
-        isLoading = true;
-      });
+      setState(() => isLoading = true);
 
       await FirebaseFirestore.instance.collection('students').add({
         'name': _nameController.text.trim(),
@@ -112,8 +133,8 @@ class _AddStudentPageState extends State<AddStudentPage> {
         'gender': selectedGender,
         'datetime': Timestamp.fromDate(joiningDate!),
         'DOB': Timestamp.fromDate(dobDate!),
-        'isArchived':false,
-        'image':'https://images.unsplash.com/photo-1494790108377-be9c29b29330'
+        'isArchived': false,
+        'image': 'https://images.unsplash.com/photo-1494790108377-be9c29b29330',
       });
 
       _nameController.clear();
@@ -134,42 +155,35 @@ class _AddStudentPageState extends State<AddStudentPage> {
         ),
       );
     } catch (e) {
-      ScaffoldMessenger.of(context).showSnackBar(
-        SnackBar(content: Text("Error: $e"), backgroundColor: Colors.red),
-      );
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text("Error: $e")));
     } finally {
-      setState(() {
-        isLoading = false;
-      });
+      setState(() => isLoading = false);
     }
   }
 
-  Widget buildTextField({
+  /// 🌐 INPUT FIELD
+  Widget inputField({
     required String label,
     required TextEditingController controller,
-    TextInputType? keyboardType,
-    VoidCallback? onTap,
     bool readOnly = false,
-    Widget? suffixIcon,
+    VoidCallback? onTap,
+    Widget? suffix,
+    TextInputType? keyboardType,
   }) {
-    return Container(
-      decoration: BoxDecoration(
-        color: const Color(0xFFE9E8E8),
-        borderRadius: BorderRadius.circular(20),
-      ),
-      child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 20, vertical: 8),
-        child: TextField(
-          controller: controller,
-          keyboardType: keyboardType,
-          readOnly: readOnly,
-          onTap: onTap,
-          decoration: InputDecoration(
-            border: InputBorder.none,
-            labelText: label,
-            labelStyle: const TextStyle(color: Colors.black),
-            suffixIcon: suffixIcon,
-          ),
+    return glassBox(
+      child: TextField(
+        controller: controller,
+        readOnly: readOnly,
+        onTap: onTap,
+        keyboardType: keyboardType,
+        style: const TextStyle(color: Colors.white),
+        decoration: InputDecoration(
+          labelText: label,
+          labelStyle: const TextStyle(color: Colors.white70),
+          border: InputBorder.none,
+          suffixIcon: suffix,
         ),
       ),
     );
@@ -178,107 +192,122 @@ class _AddStudentPageState extends State<AddStudentPage> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      resizeToAvoidBottomInset: true,
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF070B1A),
+
       appBar: AppBar(
-        backgroundColor: Colors.blue,
-        iconTheme: const IconThemeData(color: Colors.white),
+        backgroundColor: Colors.transparent,
+        elevation: 0,
         title: const Text("Add Student", style: TextStyle(color: Colors.white)),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
-      body: SafeArea(
-        child: SingleChildScrollView(
-          padding: const EdgeInsets.all(16),
-          child: Column(
-            children: [
-              buildTextField(label: "Name", controller: _nameController),
 
-              const SizedBox(height: 12),
-
-              buildTextField(
-                label: "Number",
-                controller: _numberController,
-                keyboardType: TextInputType.number,
-              ),
-
-              const SizedBox(height: 12),
-
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE9E8E8),
-                  borderRadius: BorderRadius.circular(20),
+      body: Stack(
+        children: [
+          SingleChildScrollView(
+            padding: const EdgeInsets.all(16),
+            child: Column(
+              children: [
+                const SizedBox(height: 10),
+          
+                inputField(label: "Name", controller: _nameController),
+          
+                const SizedBox(height: 12),
+          
+                inputField(
+                  label: "Number",
+                  controller: _numberController,
+                  keyboardType: TextInputType.phone,
                 ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
+          
+                const SizedBox(height: 12),
+          
+                /// GENDER
+                glassBox(
                   child: DropdownButtonFormField<String>(
                     value: selectedGender,
+                    dropdownColor: const Color(0xFF0F172A),
                     decoration: const InputDecoration(
                       border: InputBorder.none,
                       labelText: "Gender",
+                      labelStyle: TextStyle(color: Colors.white70),
                     ),
                     items: const [
-                      DropdownMenuItem(value: "Male", child: Text("Male")),
-                      DropdownMenuItem(value: "Female", child: Text("Female")),
-                      DropdownMenuItem(value: "Other", child: Text("Other")),
+                      DropdownMenuItem(
+                        value: "Male",
+                        child: Text("Male", style: TextStyle(color: Colors.white)),
+                      ),
+                      DropdownMenuItem(
+                        value: "Female",
+                        child: Text(
+                          "Female",
+                          style: TextStyle(color: Colors.white),
+                        ),
+                      ),
+                      DropdownMenuItem(
+                        value: "Other",
+                        child: Text("Other", style: TextStyle(color: Colors.white)),
+                      ),
                     ],
                     onChanged: (value) {
-                      setState(() {
-                        selectedGender = value;
-                      });
+                      setState(() => selectedGender = value);
                     },
                   ),
                 ),
-              ),
-
-              const SizedBox(height: 12),
-
-              buildTextField(
-                label: "Joining Date",
-                controller: _joiningController,
-                readOnly: true,
-                onTap: _pickJoiningDate,
-                suffixIcon: const Icon(Icons.calendar_month),
-              ),
-
-              const SizedBox(height: 12),
-
-              buildTextField(
-                label: "Date of Birth",
-                controller: _dobController,
-                readOnly: true,
-                onTap: _pickDobDate,
-                suffixIcon: const Icon(Icons.calendar_month),
-              ),
-
-              const SizedBox(height: 25),
-
-              SizedBox(
-                width: double.infinity,
-                height: 55,
-                child: ElevatedButton(
-                  onPressed: isLoading ? null : _addStudent,
-                  style: ElevatedButton.styleFrom(
-                    backgroundColor: Colors.blue,
-                    shape: RoundedRectangleBorder(
-                      borderRadius: BorderRadius.circular(20),
-                    ),
-                  ),
-                  child:
-                      isLoading
-                          ? const CircularProgressIndicator(color: Colors.white)
-                          : const Text(
-                            "Add Student",
-                            style: TextStyle(color: Colors.white, fontSize: 16),
-                          ),
+          
+                const SizedBox(height: 12),
+          
+                inputField(
+                  label: "Joining Date",
+                  controller: _joiningController,
+                  readOnly: true,
+                  onTap: _pickJoiningDate,
+                  suffix: const Icon(Icons.calendar_month, color: Colors.white70),
                 ),
-              ),
-            ],
+          
+                const SizedBox(height: 12),
+          
+                inputField(
+                  label: "Date of Birth",
+                  controller: _dobController,
+                  readOnly: true,
+                  onTap: _pickDobDate,
+                  suffix: const Icon(Icons.calendar_month, color: Colors.white70),
+                ),
+          
+                const SizedBox(height: 25),
+          
+                /// BUTTON
+                SizedBox(
+                  width: double.infinity,
+                  height: 55,
+                  child: ElevatedButton(
+                    onPressed: isLoading ? null : _addStudent,
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent.withOpacity(0.8),
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(18),
+                      ),
+                    ),
+                    child:
+                        isLoading
+                            ? const CircularProgressIndicator(color: Colors.white)
+                            : const Text(
+                              "Add Student",
+                              style: TextStyle(color: Colors.white),
+                            ),
+                  ),
+                ),
+                SizedBox(height: 100,)
+              ],
+            ),
           ),
-        ),
+           Positioned(
+            bottom: 10,
+            left: 0,
+            right: 0,
+            child: Navbar(type: "Add")),
+        ],
       ),
-      bottomNavigationBar: const Navbar(type: "Add"),
     );
   }
 }

@@ -1,377 +1,502 @@
+import 'package:attendance/view/student_edit.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
-class StudentProfile extends StatefulWidget {
+class StudentViewProfile extends StatelessWidget {
   final String studentId;
   final String studentName;
   final String studendNumber;
   final Timestamp studendDate;
   final Timestamp studentDob;
   final String studendGender;
-  // final String studentImage;
 
-  StudentProfile({
+  const StudentViewProfile({
+    super.key,
     required this.studentId,
     required this.studentName,
     required this.studendNumber,
     required this.studendDate,
     required this.studentDob,
     required this.studendGender,
-    // required this.studentImage,
   });
 
-  @override
-  _StudentProfileState createState() => _StudentProfileState();
-}
-
-class _StudentProfileState extends State<StudentProfile> {
-  late TextEditingController nameController;
-  late TextEditingController numberController;
-  late TextEditingController datetimeController;
-  late TextEditingController dobController;
-  late TextEditingController genderController;
-
-  String? selectedGender;
-  DateTime? selectedDob;
-  DateTime? selectedDate;
-  // late TextEditingController imageController;
-
-  @override
-  void initState() {
-    super.initState();
-
-    nameController = TextEditingController(text: widget.studentName);
-    numberController = TextEditingController(text: widget.studendNumber);
-
-    selectedGender = widget.studendGender;
-
-    selectedDate = widget.studendDate.toDate();
-
-    datetimeController = TextEditingController(
-      text: "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}",
-    );
-
-    selectedDob = widget.studentDob.toDate();
-
-    dobController = TextEditingController(
-      text: "${selectedDob!.day}-${selectedDob!.month}-${selectedDob!.year}",
-    );
-  }
-  // void initState() {
-  //   super.initState();
-
-  //   nameController = TextEditingController(text: widget.studentName);
-  //   numberController = TextEditingController(text: widget.studendNumber);
-  //   genderController = TextEditingController(text: widget.studendGender);
-
-  //   // ⭐ ADD THIS HERE (IMPORTANT)
-  //   try {
-  //     Timestamp ts = widget.studendDate as Timestamp;
-  //     selectedDate = ts.toDate();
-  //     datetimeController = TextEditingController(
-  //       text:
-  //           "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}",
-  //     );
-  //   } catch (e) {
-  //     selectedDate = widget.studendDate.toDate();
-
-  //     datetimeController = TextEditingController(
-  //       text:
-  //           "${selectedDate!.day}-${selectedDate!.month}-${selectedDate!.year}",
-  //     );
-  //   }
-  // }
-  Future<void> _pickDobDate() async {
-  DateTime? picked = await showDatePicker(
-    context: context,
-    initialDate: selectedDob ?? DateTime.now(),
-    firstDate: DateTime(1950),
-    lastDate: DateTime.now(),
-  );
-
-  if (picked != null) {
-    setState(() {
-      selectedDob = picked;
-      dobController.text =
-          "${picked.day}-${picked.month}-${picked.year}";
-    });
-  }
-}
-
-  Future<void> _pickDate() async {
-    DateTime? picked = await showDatePicker(
-      context: context,
-      initialDate: DateTime.now(),
-      firstDate: DateTime(2000),
-      lastDate: DateTime(2100),
-      builder: (context, child) {
-        return Theme(
-          data: Theme.of(context).copyWith(
-            colorScheme: ColorScheme.light(
-              primary: Colors.blue, // Header color
-              onPrimary: Colors.white, // Header text color
-              onSurface: Colors.black, // Calendar text color
+  Widget infoTile({
+    required IconData icon,
+    required String title,
+    required String value,
+  }) {
+    return Container(
+      margin: const EdgeInsets.only(bottom: 12),
+      padding: const EdgeInsets.all(14),
+      decoration: BoxDecoration(
+        color: const Color(0xFF111827),
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(color: Colors.white10),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: Colors.blueAccent),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(color: Colors.white54, fontSize: 12),
+                ),
+                const SizedBox(height: 4),
+                Text(
+                  value,
+                  style: const TextStyle(
+                    color: Colors.white,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w600,
+                  ),
+                ),
+              ],
             ),
-            dialogBackgroundColor: Colors.white, // Background
           ),
-          child: child!,
-        );
-      },
+        ],
+      ),
     );
+  }
 
-    if (picked != null) {
-      setState(() {
-        selectedDate = picked;
-        datetimeController.text =
-            "${picked.day}-${picked.month}-${picked.year}";
-      });
-    }
+  String formatDate(Timestamp ts) {
+    final d = ts.toDate();
+    return "${d.day}-${d.month}-${d.year}";
   }
 
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
+      backgroundColor: const Color(0xFF070B1A),
+
       appBar: AppBar(
-        iconTheme: IconThemeData(color: Colors.white),
-        title: Text("Edit Student", style: TextStyle(color: Colors.white)),
-        backgroundColor: Colors.blue,
-        actions: [
-          IconButton(
-            icon: Icon(Icons.delete),
-            onPressed: () => _confirmDelete(context),
-          ),
-        ],
+        backgroundColor: Colors.transparent,
+        elevation: 0,
+        title: const Text(
+          "Student Profile",
+          style: TextStyle(color: Colors.white),
+        ),
+        iconTheme: const IconThemeData(color: Colors.white),
       ),
+
       body: Padding(
-        padding: const EdgeInsets.all(20),
-        child: SingleChildScrollView(
-          child: Column(
-            children: [
-              // 👇 Profile Image Preview
-              // CircleAvatar(
-              //   radius: 40,
-              //   backgroundImage: NetworkImage(imageController.text),
-              // ),
-              SizedBox(height: 10),
-          
-              // TextField(
-              //   controller: imageController,
-              //   decoration: InputDecoration(labelText: "Image URL"),
-              //   onChanged: (_) {
-              //     setState(() {}); // live preview update
-              //   },
-              // ),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE9E8E8),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
+        padding: const EdgeInsets.all(16),
+        child: Column(
+          children: [
+            /// Profile Header
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: const Color(0xFF0F172A),
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: Colors.white10),
+              ),
+              child: Column(
+                children: [
+                  const CircleAvatar(
+                    radius: 42,
+                    backgroundColor: Colors.blueAccent,
+                    child: Icon(Icons.person, size: 40, color: Colors.white),
                   ),
-                  child: TextField(
-                    controller: nameController,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      labelText: 'Name',
+
+                  const SizedBox(height: 12),
+
+                  Text(
+                    studentName,
+                    style: const TextStyle(
+                      color: Colors.white,
+                      fontSize: 20,
+                      fontWeight: FontWeight.bold,
                     ),
                   ),
-                ),
-              ),
-              SizedBox(height: 20),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE9E8E8),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  child: TextField(
-                    keyboardType: TextInputType.number,
-                    controller: numberController,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      labelText: "Number",
+
+                  const SizedBox(height: 6),
+
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 12,
+                      vertical: 5,
                     ),
-                  ),
-                ),
-              ),
-              SizedBox(height: 20),
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE9E8E8),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  child: DropdownButtonFormField<String>(
-                    value: selectedGender,
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      labelText: "Gender",
-                    ),
-                    items:
-                        ['Male', 'Female', 'Other']
-                            .map(
-                              (e) => DropdownMenuItem(value: e, child: Text(e)),
-                            )
-                            .toList(),
-                    onChanged: (value) {
-                      setState(() {
-                        selectedGender = value;
-                      });
-                    },
-                  ),
-                ),
-              ),
-          
-              SizedBox(height: 10),
-          
-              // DATE
-              Container(
-                decoration: BoxDecoration(
-                  color: const Color(0xFFE9E8E8),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: Padding(
-                  padding: const EdgeInsets.symmetric(
-                    horizontal: 20,
-                    vertical: 8,
-                  ),
-                  child: TextField(
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      labelStyle: TextStyle(color: Colors.black),
-                      labelText: "Select Date",
-                      suffixIcon: Icon(Icons.calendar_month),
-                    ),
-                    controller: datetimeController,
-                    readOnly: true,
-                    onTap: _pickDate,
-                  ),
-                ),
-              ),
-          
-              SizedBox(height: 10),
-          
-          Container(
-            decoration: BoxDecoration(
-              color: const Color(0xFFE9E8E8),
-              borderRadius: BorderRadius.circular(20),
-            ),
-            child: Padding(
-              padding: const EdgeInsets.symmetric(
-                horizontal: 20,
-                vertical: 8,
-              ),
-              child: TextField(
-                controller: dobController,
-                readOnly: true,
-                onTap: _pickDobDate,
-                decoration: InputDecoration(
-          border: InputBorder.none,
-          labelText: "Date of Birth",
-          suffixIcon: Icon(Icons.calendar_month),
-                ),
-              ),
-            ),
-          ),
-          
-              Padding(
-                padding: const EdgeInsets.symmetric(vertical: 5),
-                child: GestureDetector(
-                  onTap: _updateStudent,
-          
-                  child: Container(
                     decoration: BoxDecoration(
-                      color: Colors.blue,
+                      color: Colors.green.withOpacity(0.15),
                       borderRadius: BorderRadius.circular(20),
                     ),
-                    child: Padding(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 100,
-                        vertical: 20,
-                      ),
-                      child: Text(
-                        "Update",
-                        style: TextStyle(color: Colors.white),
+                    child: const Text(
+                      "Active Student",
+                      style: TextStyle(
+                        color: Colors.green,
+                        fontSize: 12,
+                        fontWeight: FontWeight.w600,
                       ),
                     ),
                   ),
+                ],
+              ),
+            ),
+
+            const SizedBox(height: 20),
+
+            /// Details
+            infoTile(
+              icon: Icons.phone,
+              title: "Phone Number",
+              value: studendNumber,
+            ),
+
+            infoTile(
+              icon: Icons.person_outline,
+              title: "Gender",
+              value: studendGender,
+            ),
+
+            infoTile(
+              icon: Icons.cake_outlined,
+              title: "Date of Birth",
+              value: formatDate(studentDob),
+            ),
+
+            infoTile(
+              icon: Icons.calendar_month,
+              title: "Joining Date",
+              value: formatDate(studendDate),
+            ),
+            const Spacer(),
+            /// Edit Button
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () {
+                  Navigator.push(
+                    context,
+                    MaterialPageRoute(
+                      builder:
+                          (_) => StudentEdit(
+                            studentId: studentId,
+                            studentName: studentName,
+                            studendNumber: studendNumber,
+                            studendDate: studendDate,
+                            studentDob: studentDob,
+                            studendGender: studendGender,
+                          ),
+                    ),
+                  );
+                },
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: Colors.blueAccent,
+                  padding: const EdgeInsets.symmetric(vertical: 16),
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
+                child: const Text(
+                  "Edit Profile",
+                  style: TextStyle(color: Colors.white, fontSize: 15),
                 ),
               ),
-            ],
-          ),
+            ),
+          ],
         ),
       ),
     );
   }
-
-  // ✅ UPDATE
-  Future<void> _updateStudent() async {
-    await FirebaseFirestore.instance
-        .collection('students')
-        .doc(widget.studentId)
-        .update({
-          'name': nameController.text,
-          'number': numberController.text,
-          'gender': selectedGender ?? genderController.text,
-          'datetime':
-              selectedDate != null
-                  ? Timestamp.fromDate(selectedDate!)
-                  : Timestamp.fromDate(DateTime.now()),
-                  'DOB': Timestamp.fromDate(selectedDob!),
-        });
-
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(SnackBar(content: Text("Updated Successfully")));
-
-    Navigator.pop(context);
-  }
-  // ❌ DELETE
-
-  void _confirmDelete(context) {
-    showDialog(
-      context: context,
-      builder: (context) {
-        return AlertDialog(
-          backgroundColor: Colors.white,
-          title: Text("Delete Student"),
-          content: Text("Are you sure you want to delete this student?"),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(context),
-              child: Text("Cancel"),
-            ),
-            TextButton(
-              onPressed: () async {
-                Navigator.pop(context);
-                await _deleteStudent();
-              },
-              child: Text("Delete", style: TextStyle(color: Colors.red)),
-            ),
-          ],
-        );
-      },
-    );
-  }
-
-  Future<void> _deleteStudent() async {
-    await FirebaseFirestore.instance
-        .collection('students')
-        .doc(widget.studentId)
-        .delete();
-
-    Navigator.pop(context);
-  }
 }
+
+
+// import 'package:attendance/view/student_edit.dart';
+// import 'package:flutter/material.dart';
+// import 'package:cloud_firestore/cloud_firestore.dart';
+
+// class StudentViewProfile extends StatelessWidget {
+//   final String studentId;
+//   final String studentName;
+//   final String studendNumber;
+//   final Timestamp studendDate;
+//   final Timestamp studentDob;
+//   final String studendGender;
+
+//   const StudentViewProfile({
+//     super.key,
+//     required this.studentId,
+//     required this.studentName,
+//     required this.studendNumber,
+//     required this.studendDate,
+//     required this.studentDob,
+//     required this.studendGender,
+//   });
+
+//   String formatDate(Timestamp ts) {
+//     final d = ts.toDate();
+//     return "${d.day}-${d.month}-${d.year}";
+//   }
+
+//   Widget infoCard({
+//     required IconData icon,
+//     required String title,
+//     required String value,
+//   }) {
+//     return Container(
+//       margin: const EdgeInsets.only(bottom: 14),
+//       padding: const EdgeInsets.all(18),
+//       decoration: BoxDecoration(
+//         color: const Color(0xFF111827),
+//         borderRadius: BorderRadius.circular(20),
+//         border: Border.all(color: Colors.white10),
+//       ),
+//       child: Row(
+//         children: [
+//           Container(
+//             height: 48,
+//             width: 48,
+//             decoration: BoxDecoration(
+//               color: Colors.blueAccent.withOpacity(0.15),
+//               borderRadius: BorderRadius.circular(14),
+//             ),
+//             child: Icon(icon, color: Colors.blueAccent),
+//           ),
+//           const SizedBox(width: 14),
+
+//           Expanded(
+//             child: Column(
+//               crossAxisAlignment: CrossAxisAlignment.start,
+//               children: [
+//                 Text(
+//                   title,
+//                   style: const TextStyle(
+//                     color: Colors.white54,
+//                     fontSize: 12,
+//                   ),
+//                 ),
+//                 const SizedBox(height: 5),
+//                 Text(
+//                   value,
+//                   style: const TextStyle(
+//                     color: Colors.white,
+//                     fontSize: 16,
+//                     fontWeight: FontWeight.w600,
+//                   ),
+//                 ),
+//               ],
+//             ),
+//           )
+//         ],
+//       ),
+//     );
+//   }
+
+//   @override
+//   Widget build(BuildContext context) {
+//     return Scaffold(
+//       backgroundColor: const Color(0xFF070B1A),
+
+//       body: SingleChildScrollView(
+//         child: Column(
+//           children: [
+//             /// TOP HERO SECTION
+//             Stack(
+//               clipBehavior: Clip.none,
+//               children: [
+//                 Container(
+//                   height: 100,
+//                   width: double.infinity,
+//                   decoration: const BoxDecoration(
+//                     gradient: LinearGradient(
+//                       colors: [
+//                         Color(0xFF2563EB),
+//                         Color(0xFF1E40AF),
+//                       ],
+//                       begin: Alignment.topLeft,
+//                       end: Alignment.bottomRight,
+//                     ),
+//                     borderRadius: BorderRadius.only(
+//                       bottomLeft: Radius.circular(35),
+//                       bottomRight: Radius.circular(35),
+//                     ),
+//                   ),
+//                 ),
+
+//                 SafeArea(
+//                   child: Padding(
+//                     padding: const EdgeInsets.symmetric(
+//                       horizontal: 16,
+//                       vertical: 14,
+//                     ),
+//                     child: Row(
+//                       children: [
+//                         IconButton(
+//                           onPressed: () => Navigator.pop(context),
+//                           icon: const Icon(
+//                             Icons.arrow_back_ios,
+//                             color: Colors.white,
+//                           ),
+//                         ),
+//                         const Spacer(),
+//                         // const Text(
+//                         //   "Student Profile",
+//                         //   style: TextStyle(
+//                         //     color: Colors.white,
+//                         //     fontSize: 18,
+//                         //     fontWeight: FontWeight.bold,
+//                         //   ),
+//                         // ),
+//                         // // const Spacer(),
+//                         // const SizedBox(width: 40),
+//                       ],
+//                     ),
+//                   ),
+//                 ),
+
+//                 /// FLOATING AVATAR
+//                 Positioned(
+//                   bottom: -55,
+//                   left: 0,
+//                   right: 0,
+//                   child: Center(
+//                     child: Container(
+//                       padding: const EdgeInsets.all(5),
+//                       decoration: BoxDecoration(
+//                         color: const Color(0xFF070B1A),
+//                         shape: BoxShape.circle,
+//                       ),
+//                       child: const CircleAvatar(
+//                         radius: 55,
+//                         backgroundColor: Colors.white,
+//                         child: Icon(
+//                           Icons.person,
+//                           size: 55,
+//                           color: Colors.blueAccent,
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+//                 ),
+//               ],
+//             ),
+
+//             const SizedBox(height: 70),
+
+//             /// NAME
+//             Text(
+//               studentName,
+//               style: const TextStyle(
+//                 color: Colors.white,
+//                 fontSize: 24,
+//                 fontWeight: FontWeight.bold,
+//               ),
+//             ),
+
+//             const SizedBox(height: 8),
+
+//             Container(
+//               padding: const EdgeInsets.symmetric(
+//                 horizontal: 14,
+//                 vertical: 6,
+//               ),
+//               decoration: BoxDecoration(
+//                 color: Colors.green.withOpacity(0.15),
+//                 borderRadius: BorderRadius.circular(20),
+//               ),
+//               child: const Text(
+//                 "Active Student",
+//                 style: TextStyle(
+//                   color: Colors.greenAccent,
+//                   fontWeight: FontWeight.w600,
+//                 ),
+//               ),
+//             ),
+
+//             const SizedBox(height: 30),
+
+//             /// DETAILS SECTION
+//             Padding(
+//               padding: const EdgeInsets.symmetric(horizontal: 18),
+//               child: Column(
+//                 crossAxisAlignment: CrossAxisAlignment.start,
+//                 children: [
+//                   const Text(
+//                     "Personal Information",
+//                     style: TextStyle(
+//                       color: Colors.white70,
+//                       fontSize: 16,
+//                       fontWeight: FontWeight.w600,
+//                     ),
+//                   ),
+
+//                   const SizedBox(height: 16),
+
+//                   infoCard(
+//                     icon: Icons.phone,
+//                     title: "Phone Number",
+//                     value: studendNumber,
+//                   ),
+
+//                   infoCard(
+//                     icon: Icons.person_outline,
+//                     title: "Gender",
+//                     value: studendGender,
+//                   ),
+
+//                   infoCard(
+//                     icon: Icons.cake,
+//                     title: "Date of Birth",
+//                     value: formatDate(studentDob),
+//                   ),
+
+//                   infoCard(
+//                     icon: Icons.calendar_month,
+//                     title: "Joining Date",
+//                     value: formatDate(studendDate),
+//                   ),
+
+//                   const SizedBox(height: 30),
+
+//                   /// EDIT BUTTON
+//                   SizedBox(
+//                     width: double.infinity,
+//                     height: 58,
+//                     child: ElevatedButton(
+//                       onPressed: () {
+//                         Navigator.push(
+//                           context,
+//                           MaterialPageRoute(
+//                             builder: (_) => StudentEdit(
+//                               studentId: studentId,
+//                               studentName: studentName,
+//                               studendNumber: studendNumber,
+//                               studendDate: studendDate,
+//                               studentDob: studentDob,
+//                               studendGender: studendGender,
+//                             ),
+//                           ),
+//                         );
+//                       },
+//                       style: ElevatedButton.styleFrom(
+//                         backgroundColor: Colors.blueAccent,
+//                         shape: RoundedRectangleBorder(
+//                           borderRadius: BorderRadius.circular(18),
+//                         ),
+//                       ),
+//                       child: const Text(
+//                         "Edit Profile",
+//                         style: TextStyle(
+//                           color: Colors.white,
+//                           fontSize: 16,
+//                           fontWeight: FontWeight.w600,
+//                         ),
+//                       ),
+//                     ),
+//                   ),
+
+//                   const SizedBox(height: 30),
+//                 ],
+//               ),
+//             ),
+//           ],
+//         ),
+//       ),
+//     );
+//   }
+// }

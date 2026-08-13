@@ -1,11 +1,14 @@
-import 'package:attendance/component/navbar.dart';
-import 'package:attendance/view/student_detail_page.dart';
+import 'dart:ui';
 import 'package:attendance/view/student_profile.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
+import 'package:attendance/component/navbar.dart';
+import 'package:attendance/view/student_detail_page.dart';
+import 'package:attendance/view/student_edit.dart';
+
 class HomePage extends StatefulWidget {
-  @override
+  @override   
   _HomePageState createState() => _HomePageState();
 }
 
@@ -13,296 +16,360 @@ class _HomePageState extends State<HomePage> {
   Map<String, String> attendanceMap = {};
   TextEditingController searchController = TextEditingController();
   String searchQuery = "";
-  final FocusNode searchFocusNode = FocusNode();
+
+  Widget glassBox({required Widget child}) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(18),
+      child: BackdropFilter(
+        filter: ImageFilter.blur(sigmaX: 18, sigmaY: 18),
+        child: Container(
+          padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.06),
+            borderRadius: BorderRadius.circular(18),
+            border: Border.all(
+              color: Colors.white.withOpacity(0.12),
+            ),
+          ),
+          child: child,
+        ),
+      ),
+    );
+  }
+
+  Widget statusChip(String text, Color color, bool selected, VoidCallback onTap) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
+        decoration: BoxDecoration(
+          color: selected ? color.withOpacity(0.2) : Colors.white10,
+          borderRadius: BorderRadius.circular(20),
+          border: Border.all(color: color.withOpacity(0.5)),
+        ),
+        child: Text(
+          text,
+          style: TextStyle(
+            color: selected ? color : Colors.white70,
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+          ),
+        ),
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      backgroundColor: Colors.white,
-      appBar: AppBar(
-        backgroundColor: Colors.blue,
-        title: Container(
-          decoration: BoxDecoration(
-            color: const Color(0xFFFFFFFF),
-            borderRadius: BorderRadius.circular(20),
-          ),
+      backgroundColor: const Color(0xFF070B1A),
+
+      /// 🌐 Glass AppBar
+      appBar: PreferredSize(
+        preferredSize: const Size.fromHeight(70),
+        child: SafeArea(
           child: Padding(
-            padding: const EdgeInsets.symmetric(horizontal: 20),
-            child: TextField(
-              controller: searchController,
-              focusNode: searchFocusNode,
-              onChanged: (value) {
-                setState(() {
-                  searchQuery = value.toLowerCase();
-                });
-              },
-              decoration: InputDecoration(
-                hintText: "Search student...",
-                // prefixIcon: Icon(Icons.search),
-                border: InputBorder.none,
+            padding: const EdgeInsets.all(10),
+            child: glassBox(
+              child: Row(
+                children: [
+                  const Icon(Icons.search, color: Colors.white70),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: TextField(
+                      controller: searchController,
+                      onChanged: (v) {
+                        setState(() {
+                          searchQuery = v.toLowerCase();
+                        });
+                      },
+                      style: const TextStyle(color: Colors.white),
+                      decoration: const InputDecoration(
+                        hintText: "Search student...",
+                        hintStyle: TextStyle(color: Colors.white38),
+                        border: InputBorder.none,
+                      ),
+                    ),
+                  ),
+                  ElevatedButton(
+                    style: ElevatedButton.styleFrom(
+                      backgroundColor: Colors.blueAccent,
+                      shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                    ),
+                    onPressed: () async {
+                      String today =
+                          DateTime.now().toIso8601String().split('T')[0];
+
+                      await FirebaseFirestore.instance
+                          .collection('attendance')
+                          .doc(today)
+                          .set(attendanceMap);
+
+                      ScaffoldMessenger.of(context).showSnackBar(
+                        const SnackBar(content: Text("Attendance Submitted!")),
+                      );
+                    },
+                    child: const Icon(Icons.done, color: Colors.white),
+                  )
+                ],
               ),
             ),
           ),
         ),
-        actions: [
-          Padding(
-            padding: const EdgeInsets.only(right: 20),
-            child: ElevatedButton(
-              onPressed: () async {
-                // String today = "2026-03-25";
-                String today = DateTime.now().toIso8601String().split('T')[0];
-
-                await FirebaseFirestore.instance
-                    .collection('attendance')
-                    .doc(today)
-                    .set(attendanceMap); // {studentId: status}
-
-                ScaffoldMessenger.of(context).showSnackBar(
-                  SnackBar(content: Text("Attendance Submitted!")),
-                );
-              },
-              child: Icon(Icons.done, color: Colors.blue),
-            ),
-          ),
-        ],
       ),
-      body: StreamBuilder<QuerySnapshot>(
-        stream: FirebaseFirestore.instance
-    .collection('students')
-    .where('isArchived', isEqualTo: false)
-    .snapshots(),
-        builder: (context, snapshot) {
-          if (!snapshot.hasData) return CircularProgressIndicator();
-          // var students = snapshot.data!.docs;
-          var students =
-              snapshot.data!.docs.where((student) {
+
+      /// 🌌 Body
+      body: Stack(
+        children: [
+          StreamBuilder<QuerySnapshot>(
+            stream: FirebaseFirestore.instance
+                .collection('students')
+                .where('isArchived', isEqualTo: false)
+                .snapshots(),
+            builder: (context, snapshot) {
+              if (!snapshot.hasData) {
+                return const Center(child: CircularProgressIndicator());
+              }
+          
+              var students = snapshot.data!.docs.where((student) {
                 String name = student['name'].toString().toLowerCase();
                 return name.contains(searchQuery);
               }).toList();
-
-          return Column(
-            children: [
-              Padding(
-                padding: const EdgeInsets.all(10),
-                child: Align(
-                  alignment: Alignment.centerLeft,
-                  child: Text(
-                    "Total Students: ${students.length}",
-                    style: TextStyle(fontSize: 16, fontWeight: FontWeight.bold),
+          
+              return Column(
+                children: [
+                  Padding(
+                    padding: const EdgeInsets.all(12),
+                    child: Align(
+                      alignment: Alignment.centerLeft,
+                      child: Text(
+                        "Total Students: ${students.length}",
+                        style: const TextStyle(
+                          color: Colors.white70,
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                        ),
+                      ),
+                    ),
                   ),
-                ),
-              ),
-
-              SizedBox(height: 10),
-              Expanded(
-                child: ListView.builder(
-                  itemCount: students.length,
-                  itemBuilder: (context, index) {
-                    var student = students[index];
-                    String studentId = student.id;
-                    String studentName = student['name'] ?? 'No Name';
-                    Timestamp? timestamp = student['datetime'];
-                    DateTime? joiningdate = timestamp?.toDate();
-                    // String studentimg =
-                    //     student['image'] ??
-                    //     'https://www.savethechildren.org/us/what-we-do/education/literacy-in-us';
-                    // String studentnumber = student['number'] ?? 'No Name';
-
-                    return Card(
-                      color: Colors.white,
-                      child: ListTile(
-                        onLongPress: () {
-                          showModalBottomSheet(
-                            context: context,
-                            builder: (context) {
-                              return ListTile(
-                                leading: Icon(Icons.archive),
-                                title: Text("Archive Student"),
-                                onTap: () async {
-                                  await FirebaseFirestore.instance
-                                      .collection('students')
-                                      .doc(student.id)
-                                      .update({'isArchived': true});
-
-                                  Navigator.pop(context);
-                                },
-                              );
-                            },
-                          );
-                        },
-                        title: Row(
-                          mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                          children: [
-                            Row(
-                              children: [
-                                // GestureDetector(
-                                // onTap: () {
-                                //   Navigator.push(
-                                //     context,
-                                //     MaterialPageRoute(
-                                //       builder:
-                                //           (_) => StudentProfile(
-                                //             studentId: student.id,
-                                //             studentName: student['name'],
-                                //             studendNumber: student['number'],
-                                //             studentImage: student['image'],
-                                //           ),
-                                //     ),
-                                //   );
-                                // },
-                                //   child: CircleAvatar(
-                                //     radius: 25,
-                                //     backgroundImage: NetworkImage(studentimg),
-                                //   ),
-                                // ),
-                                SizedBox(width: 10),
-                                GestureDetector(
-                                  onTap: () {
-                                    Navigator.push(
-                                      context,
-                                      MaterialPageRoute(
-                                        builder:
-                                            (_) => StudentProfile(
-                                              studentId: student.id,
-                                              studentName: student['name'],
-                                              studendNumber: student['number'],
-                                              studendDate: student['datetime'],
-                                              studentDob: student['DOB'],
-                                              studendGender: student['gender'],
-                                              // studentImage: student['image'],
+                  Expanded(
+                    child: ListView.builder(
+                       padding: const EdgeInsets.only(bottom: 90),
+                      itemCount: students.length,
+                      itemBuilder: (context, index) {
+                        var student = students[index];
+                        String studentId = student.id;
+                        String name = student['name'] ?? 'No Name';
+                        Timestamp? ts = student['datetime'];
+                        DateTime? date = ts?.toDate();
+                        return Padding(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 12, vertical: 6),
+                          child: glassBox(
+                            child: GestureDetector(
+                              onLongPress: () {
+                                 showModalBottomSheet(
+                                  context: context,
+                                  backgroundColor: Colors.transparent,
+                                  builder: (context) {
+                                    return Container(
+                                      margin: const EdgeInsets.all(12),
+                                      padding: const EdgeInsets.all(16),
+                                      decoration: BoxDecoration(
+                                        color: const Color(0xFF0F172A),
+                                        borderRadius: BorderRadius.circular(20),
+                                        border: Border.all(color: Colors.white24),
+                                      ),
+                                      child: ListTile(
+                                        leading: const Icon(
+                                          Icons.archive_outlined,
+                                          color: Colors.redAccent,
+                                        ),
+                                        title: const Text(
+                                          "Archive Student",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                        onTap: () async {
+                                          await FirebaseFirestore.instance
+                                              .collection('students')
+                                              .doc(student.id)
+                                              .update({'isArchived': true});
+          
+                                          Navigator.pop(context);
+          
+                                          ScaffoldMessenger.of(
+                                            context,
+                                          ).showSnackBar(
+                                            const SnackBar(
+                                              content: Text("Student Archived"),
                                             ),
+                                          );
+                                        },
                                       ),
                                     );
                                   },
-                                  child: Column(
-                                    mainAxisAlignment: MainAxisAlignment.start,
-                                    crossAxisAlignment:
-                                        CrossAxisAlignment.start,
+                                );
+                              },
+                              child: Column(
+                                children: [
+                                  Row(
+                                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
                                     children: [
-                                      Row(
-                                        children: [
-                                          Text(
-                                            "${index + 1}.", // ⭐ SERIAL NUMBER
-                                            style: TextStyle(
-                                              fontSize: 16,
-                                              fontWeight: FontWeight.bold,
-                                              color: Colors.blue,
-                                            ),
+                                      Expanded(
+                                        child: GestureDetector(
+                                          onTap: () {
+                                            Navigator.push(
+                                              context,
+                                              MaterialPageRoute(
+                                                builder: (_) => 
+                                                StudentViewProfile(
+                                                  studentId: student.id,
+                                                  studentName: student['name'],
+                                                  studendNumber: student['number'],
+                                                  studendDate: student['datetime'],
+                                                  studentDob: student['DOB'],
+                                                  studendGender: student['gender'],
+                                                )
+                                                // StudentEdit(
+                                                  // studentId: student.id,
+                                                  // studentName: student['name'],
+                                                  // studendNumber: student['number'],
+                                                  // studendDate: student['datetime'],
+                                                  // studentDob: student['DOB'],
+                                                  // studendGender: student['gender'],
+                                                // ),
+                                              ),
+                                            );
+                                          },
+                                          child: Column(
+                                            crossAxisAlignment:
+                                                CrossAxisAlignment.start,
+                                            children: [
+                                              Row(
+                                                children: [
+                                                  Text(
+                                                    "${index + 1}. ",
+                                                    style: const TextStyle(
+                                                      color: Colors.blueAccent,
+                                                      fontWeight: FontWeight.bold,
+                                                    ),
+                                                  ),
+                                                  Expanded(
+                                                    child: Text(
+                                                      name,
+                                                      style: const TextStyle(
+                                                        color: Colors.white,
+                                                        fontSize: 16,
+                                                        fontWeight: FontWeight.w600,
+                                                      ),
+                                                    ),
+                                                  ),
+                                                ],
+                                              ),
+                                              Text(
+                                                date != null
+                                                    ? "${date.day}-${date.month}-${date.year}"
+                                                    : "No Date",
+                                                style: const TextStyle(
+                                                  color: Colors.white38,
+                                                  fontSize: 11,
+                                                ),
+                                              ),
+                                            ],
                                           ),
-                                          SizedBox(width: 5),
-                                          Text(
-                                            studentName,
-                                            style: TextStyle(
-                                              fontSize: 18,
-                                              color: Colors.black,
-                                              fontWeight: FontWeight.w500,
-                                            ),
-                                          ),
-                                        ],
-                                      ),
-                                      Text(
-                                        joiningdate != null
-                                            ? "${joiningdate.day}-${joiningdate.month}-${joiningdate.year}"
-                                            : "No Date",
-                                        style: TextStyle(
-                                          fontSize: 10,
-                                          color: Colors.grey,
-                                          fontWeight: FontWeight.w500,
                                         ),
+                                      ),
+                              
+                                      ElevatedButton(
+                                        style: ElevatedButton.styleFrom(
+                                          backgroundColor: Colors.white10,
+                                          shape: RoundedRectangleBorder(
+                                            borderRadius: BorderRadius.circular(12),
+                                          ),
+                                        ),
+                                        onPressed: () {
+                                          Navigator.push(
+                                            context,
+                                            MaterialPageRoute(
+                                              builder: (_) => StudentDetailPage(
+                                                studentId: student.id,
+                                                studentName: student['name'],
+                                                studendNumber: student['number'],
+                                              ),
+                                            ),
+                                          );
+                                        },
+                                        child: const Text(
+                                          "Overview",
+                                          style: TextStyle(color: Colors.white),
+                                        ),
+                                      )
+                                    ],
+                                  ),
+                              
+                                  const SizedBox(height: 10),
+                              
+                                  /// Attendance Chips (modern radio replacement)
+                                  Wrap(
+                                    spacing: 8,
+                                    children: [
+                                      statusChip(
+                                        "Present",
+                                        Colors.green,
+                                        attendanceMap[studentId] == "present",
+                                        () {
+                                          setState(() {
+                                            attendanceMap[studentId] = "present";
+                                          });
+                                        },
+                                      ),
+                                      statusChip(
+                                        "Leave",
+                                        Colors.orange,
+                                        attendanceMap[studentId] == "leave",
+                                        () {
+                                          setState(() {
+                                            attendanceMap[studentId] = "leave";
+                                          });
+                                        },
+                                      ),
+                                      statusChip(
+                                        "Absent",
+                                        Colors.red,
+                                        attendanceMap[studentId] == "absent",
+                                        () {
+                                          setState(() {
+                                            attendanceMap[studentId] = "absent";
+                                          });
+                                        },
                                       ),
                                     ],
                                   ),
-                                ),
-                              ],
-                            ),
-
-                            // IconButton(
-                            //   icon: Icon(Icons.delete, color: Colors.red),
-                            //   onPressed: () {
-                            //     _confirmDelete(studentId, context);
-                            //   },
-                            // ),
-                            GestureDetector(
-                              onTap: () {
-                                Navigator.push(
-                                  context,
-                                  MaterialPageRoute(
-                                    builder:
-                                        (_) => StudentDetailPage(
-                                          studentId: student.id,
-                                          studentName: student['name'],
-                                          studendNumber: student['number'],
-                                        ),
-                                  ),
-                                );
-                              },
-                              child: Container(
-                                decoration: BoxDecoration(
-                                  borderRadius: BorderRadius.circular(20),
-                                  color: Colors.blue,
-                                ),
-                                child: Padding(
-                                  padding: const EdgeInsets.all(8.0),
-                                  child: Text(
-                                    "Overview",
-                                    style: TextStyle(color: Colors.white),
-                                  ),
-                                ),
+                                 
+                                ],
                               ),
                             ),
-                          ],
-                        ),
-                        subtitle: Row(
-                          children: [
-                            Radio<String>(
-                              activeColor: Colors.green,
-                              value: 'present',
-                              groupValue: attendanceMap[studentId],
-                              onChanged: (val) {
-                                setState(() {
-                                  attendanceMap[studentId] = val!;
-                                });
-                              },
-                            ),
-                            Text('Present'),
-                            Radio<String>(
-                              activeColor: Colors.yellow,
-                              value: 'leave',
-                              groupValue: attendanceMap[studentId],
-                              onChanged: (val) {
-                                setState(() {
-                                  attendanceMap[studentId] = val!;
-                                });
-                              },
-                            ),
-                            Text('Leave'),
-                            Radio<String>(
-                              activeColor: Colors.red,
-                              value: 'absent',
-                              groupValue: attendanceMap[studentId],
-                              onChanged: (val) {
-                                setState(() {
-                                  attendanceMap[studentId] = val!;
-                                });
-                              },
-                            ),
-                            Text('Absent'),
-                          ],
-                        ),
-                      ),
-                    );
-                  },
-                ),
-              ),
-            ],
-          );
-        },
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ],
+              );
+            },
+          ),
+          Positioned(
+            bottom: 10,
+            left: 0,
+            right: 0,
+            child: Navbar(type: "Student")),
+        ],
       ),
-      bottomNavigationBar: Navbar(type: "Student"),
     );
   }
 }
-
-
 
 
 
