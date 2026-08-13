@@ -67,6 +67,17 @@ class StudentViewProfile extends StatelessWidget {
     return "${d.day}-${d.month}-${d.year}";
   }
 
+  int calculateAge(Timestamp dob) {
+    final birth = dob.toDate();
+    final today = DateTime.now();
+    int age = today.year - birth.year;
+    if (today.month < birth.month ||
+        (today.month == birth.month && today.day < birth.day)) {
+      age--;
+    }
+    return age;
+  }
+
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -82,7 +93,7 @@ class StudentViewProfile extends StatelessWidget {
         iconTheme: const IconThemeData(color: Colors.white),
       ),
 
-      body: Padding(
+      body: SingleChildScrollView(
         padding: const EdgeInsets.all(16),
         child: Column(
           children: [
@@ -106,7 +117,7 @@ class StudentViewProfile extends StatelessWidget {
                   const SizedBox(height: 12),
 
                   Text(
-                    studentName,
+                    "$studentName (${calculateAge(studentDob)} yrs)",
                     style: const TextStyle(
                       color: Colors.white,
                       fontSize: 20,
@@ -164,7 +175,7 @@ class StudentViewProfile extends StatelessWidget {
               title: "Joining Date",
               value: formatDate(studendDate),
             ),
-            const Spacer(),
+            const SizedBox(height: 30),
             /// Edit Button
             SizedBox(
               width: double.infinity,
