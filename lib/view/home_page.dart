@@ -4,6 +4,7 @@ import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 
 import 'package:attendance/component/navbar.dart';
+import 'package:attendance/constants/attendance_colors.dart';
 import 'package:attendance/view/student_detail_page.dart';
 import 'package:attendance/view/student_edit.dart';
 
@@ -17,7 +18,9 @@ class _HomePageState extends State<HomePage> {
   TextEditingController searchController = TextEditingController();
   String searchQuery = "";
 
-  Widget glassBox({required Widget child}) {
+  Color? statusColor(String? status) => AttendanceColors.forStatus(status);
+
+  Widget glassBox({required Widget child, Color? accent, bool birthday = false}) {
     return ClipRRect(
       borderRadius: BorderRadius.circular(18),
       child: BackdropFilter(
@@ -25,11 +28,42 @@ class _HomePageState extends State<HomePage> {
         child: Container(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.06),
+            gradient: birthday
+                ? LinearGradient(
+                    begin: Alignment.topLeft,
+                    end: Alignment.bottomRight,
+                    colors: [
+                      Colors.pinkAccent.withOpacity(0.22),
+                      Colors.amber.withOpacity(0.18),
+                      Colors.purpleAccent.withOpacity(0.18),
+                    ],
+                  )
+                : null,
+            color: birthday
+                ? null
+                :
+            //  accent != null
+            //     ? accent.withOpacity(0.12)
+                 Colors.white.withOpacity(0.06),
             borderRadius: BorderRadius.circular(18),
             border: Border.all(
-              color: Colors.white.withOpacity(0.12),
+              color: birthday
+                  ? Colors.amberAccent.withOpacity(0.8)
+                  :
+              //  accent != null
+              //     ? accent.withOpacity(0.6)
+                   Colors.white.withOpacity(0.12),
+              width: birthday ? 1.6 : (accent != null ? 1.5 : 1),
             ),
+            boxShadow: birthday
+                ? [
+                    BoxShadow(
+                      color: Colors.amberAccent.withOpacity(0.10),
+                      blurRadius: 16,
+                      spreadRadius: 1,
+                    ),
+                  ]
+                : null,
           ),
           child: child,
         ),
@@ -164,10 +198,19 @@ class _HomePageState extends State<HomePage> {
                         String name = student['name'] ?? 'No Name';
                         Timestamp? ts = student['datetime'];
                         DateTime? date = ts?.toDate();
+                        Map<String, dynamic> studentData =
+                            student.data() as Map<String, dynamic>;
+                        Timestamp? dobTs = studentData['DOB'];
+                        DateTime? dob = dobTs?.toDate();
+                        DateTime today = DateTime.now();
+                        bool isBirthday = dob != null &&
+                            dob.day == today.day &&
+                            dob.month == today.month;
                         return Padding(
                           padding: const EdgeInsets.symmetric(
                               horizontal: 12, vertical: 6),
                           child: glassBox(
+                            birthday: isBirthday,
                             child: GestureDetector(
                               onLongPress: () {
                                  showModalBottomSheet(
@@ -257,15 +300,28 @@ class _HomePageState extends State<HomePage> {
                                                     ),
                                                   ),
                                                   Expanded(
-                                                    child: Text(
-                                                      name,
-                                                      style: const TextStyle(
-                                                        color: Colors.white,
-                                                        fontSize: 16,
-                                                        fontWeight: FontWeight.w600,
-                                                      ),
+                                                    child: Row(
+                                                      children: [
+                                                        Text(
+                                                          name,
+                                                          style: const TextStyle(
+                                                            color: Colors.white,
+                                                            fontSize: 16,
+                                                            fontWeight: FontWeight.w600,
+                                                          ),
+                                                        ),
+                                                          if (isBirthday) ...[
+                                                    const SizedBox(width: 6),
+                                                    Icon(Icons.cake, color: Colors.blue,),
+                                                    // const Text(
+                                                    //   "🎂",
+                                                    //   style: TextStyle(fontSize: 16),
+                                                    // ),
+                                                  ],
+                                                      ],
                                                     ),
                                                   ),
+                                                
                                                 ],
                                               ),
                                               Text(
@@ -317,7 +373,7 @@ class _HomePageState extends State<HomePage> {
                                     children: [
                                       statusChip(
                                         "Present",
-                                        Colors.green,
+                                        AttendanceColors.present,
                                         attendanceMap[studentId] == "present",
                                         () {
                                           setState(() {
@@ -326,8 +382,18 @@ class _HomePageState extends State<HomePage> {
                                         },
                                       ),
                                       statusChip(
+                                        "Absent",
+                                        AttendanceColors.absent,
+                                        attendanceMap[studentId] == "absent",
+                                        () {
+                                          setState(() {
+                                            attendanceMap[studentId] = "absent";
+                                          });
+                                        },
+                                      ),
+                                      statusChip(
                                         "Leave",
-                                        Colors.orange,
+                                        AttendanceColors.leave,
                                         attendanceMap[studentId] == "leave",
                                         () {
                                           setState(() {
@@ -336,12 +402,12 @@ class _HomePageState extends State<HomePage> {
                                         },
                                       ),
                                       statusChip(
-                                        "Absent",
-                                        Colors.red,
-                                        attendanceMap[studentId] == "absent",
+                                        "Holiday",
+                                        AttendanceColors.holiday,
+                                        attendanceMap[studentId] == "holiday",
                                         () {
                                           setState(() {
-                                            attendanceMap[studentId] = "absent";
+                                            attendanceMap[studentId] = "holiday";
                                           });
                                         },
                                       ),

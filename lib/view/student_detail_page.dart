@@ -316,6 +316,7 @@
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:table_calendar/table_calendar.dart';
+import 'package:attendance/constants/attendance_colors.dart';
 
 class StudentDetailPage extends StatefulWidget {
   final String studentId;
@@ -362,20 +363,11 @@ class _StudentDetailPageState extends State<StudentDetailPage> {
   }
 
   Color _statusColor(String status) {
-    switch (status.toLowerCase()) {
-      case 'present':
-        return const Color(0xFF00E676);
-      case 'absent':
-        return const Color(0xFFFF5252);
-      case 'leave':
-        return const Color(0xFFFFB300);
-      default:
-        return Colors.white24;
-    }
+    return AttendanceColors.forStatus(status) ?? Colors.white24;
   }
 
   Map<String, int> _monthlyTotals() {
-    int p = 0, a = 0, l = 0;
+    int p = 0, a = 0, l = 0, h = 0;
 
     _attendance.forEach((date, status) {
       if (date.year == _focusedDay.year &&
@@ -383,10 +375,11 @@ class _StudentDetailPageState extends State<StudentDetailPage> {
         if (status == 'present') p++;
         if (status == 'absent') a++;
         if (status == 'leave') l++;
+        if (status == 'holiday') h++;
       }
     });
 
-    return {'present': p, 'absent': a, 'leave': l};
+    return {'present': p, 'absent': a, 'leave': l, 'holiday': h};
   }
 
   Widget card({required Widget child}) {
@@ -404,11 +397,12 @@ class _StudentDetailPageState extends State<StudentDetailPage> {
   @override
   Widget build(BuildContext context) {
     final m = _monthlyTotals();
-    int total = m['present']! + m['absent']! + m['leave']!;
+    int total = m['present']! + m['absent']! + m['leave']! + m['holiday']!;
 
     double p = total == 0 ? 0 : m['present']! / total;
     double a = total == 0 ? 0 : m['absent']! / total;
     double l = total == 0 ? 0 : m['leave']! / total;
+    double h = total == 0 ? 0 : m['holiday']! / total;
 
     return Scaffold(
       backgroundColor: const Color(0xFF070B1A),
@@ -432,11 +426,13 @@ class _StudentDetailPageState extends State<StudentDetailPage> {
               /// 🔵 TOP STATS
               Row(
                 children: [
-                  Expanded(child: _stat("Present", m['present']!, Colors.green)),
+                  Expanded(child: _stat("Present", m['present']!, AttendanceColors.present)),
                   const SizedBox(width: 8),
-                  Expanded(child: _stat("Leave", m['leave']!, Colors.orange)),
+                  Expanded(child: _stat("Leave", m['leave']!, AttendanceColors.leave)),
                   const SizedBox(width: 8),
-                  Expanded(child: _stat("Absent", m['absent']!, Colors.red)),
+                  Expanded(child: _stat("Absent", m['absent']!, AttendanceColors.absent)),
+                  const SizedBox(width: 8),
+                  Expanded(child: _stat("Holiday", m['holiday']!, AttendanceColors.holiday)),
                 ],
               ),
 
@@ -503,6 +499,47 @@ class _StudentDetailPageState extends State<StudentDetailPage> {
                       }
                       return null;
                     },
+                    todayBuilder: (context, day, _) {
+                      final d = _normalize(day);
+
+                      if (_attendance.containsKey(d)) {
+                        return Container(
+                          margin: const EdgeInsets.all(3),
+                          decoration: BoxDecoration(
+                            color: _statusColor(_attendance[d]!),
+                            borderRadius: BorderRadius.circular(6),
+                          ),
+                          child: Center(
+                            child: Text(
+                              "${day.day}",
+                              style: const TextStyle(
+                                color: Colors.black,
+                                fontSize: 12,
+                                fontWeight: FontWeight.w600,
+                              ),
+                            ),
+                          ),
+                        );
+                      }
+
+                      return Container(
+                        margin: const EdgeInsets.all(3),
+                        decoration: BoxDecoration(
+                          border: Border.all(color: Colors.purpleAccent),
+                          borderRadius: BorderRadius.circular(6),
+                        ),
+                        child: Center(
+                          child: Text(
+                            "${day.day}",
+                            style: const TextStyle(
+                              color: Colors.white,
+                              fontSize: 12,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      );
+                    },
                   ),
                 ),
               ),
@@ -513,11 +550,13 @@ class _StudentDetailPageState extends State<StudentDetailPage> {
               card(
                 child: Column(
                   children: [
-                    _bar("Present", p, Colors.green),
+                    _bar("Present", p, AttendanceColors.present),
                     const SizedBox(height: 10),
-                    _bar("Leave", l, Colors.orange),
+                    _bar("Leave", l, AttendanceColors.leave),
                     const SizedBox(height: 10),
-                    _bar("Absent", a, Colors.red),
+                    _bar("Absent", a, AttendanceColors.absent),
+                    const SizedBox(height: 10),
+                    _bar("Holiday", h, AttendanceColors.holiday),
                   ],
                 ),
               ),

@@ -1,4 +1,5 @@
 import 'package:attendance/component/navbar.dart';
+import 'package:attendance/constants/attendance_colors.dart';
 import 'package:flutter/material.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:syncfusion_flutter_charts/charts.dart';
@@ -14,6 +15,7 @@ class _DashboardState extends State<Dashboard> {
   int present = 0;
   int absent = 0;
   int leave = 0;
+  int holiday = 0;
 
   bool loading = true;
 
@@ -32,7 +34,7 @@ class _DashboardState extends State<Dashboard> {
     final snapshot =
         await FirebaseFirestore.instance.collection('attendance').get();
 
-    int p = 0, a = 0, l = 0;
+    int p = 0, a = 0, l = 0, h = 0;
 
     for (var doc in snapshot.docs) {
       DateTime date = DateTime.parse(doc.id);
@@ -51,6 +53,9 @@ class _DashboardState extends State<Dashboard> {
           } else if (status == "leave") {
             // ignore: curly_braces_in_flow_control_structures
             l++;
+          } else if (status == "holiday") {
+            // ignore: curly_braces_in_flow_control_structures
+            h++;
           }
         });
       }
@@ -60,6 +65,7 @@ class _DashboardState extends State<Dashboard> {
       present = p;
       absent = a;
       leave = l;
+      holiday = h;
       loading = false;
     });
   }
@@ -157,9 +163,10 @@ class _DashboardState extends State<Dashboard> {
   }
 
   List<ChartData> get chartData => [
-    ChartData("Present", present, Colors.green),
-    ChartData("Absent", absent, Colors.red),
-    ChartData("Leave", leave, Colors.orange),
+    ChartData("Present", present, AttendanceColors.present),
+    ChartData("Absent", absent, AttendanceColors.absent),
+    ChartData("Leave", leave, AttendanceColors.leave),
+    ChartData("Holiday", holiday, AttendanceColors.holiday),
   ];
 
   @override
@@ -212,9 +219,10 @@ class _DashboardState extends State<Dashboard> {
 
                     Row(
                       children: [
-                        statCard("Present", present, Colors.green),
-                        statCard("Absent", absent, Colors.red),
-                        statCard("Leave", leave, Colors.orange),
+                        statCard("Present", present, AttendanceColors.present),
+                        statCard("Absent", absent, AttendanceColors.absent),
+                        statCard("Leave", leave, AttendanceColors.leave),
+                        statCard("Holiday", holiday, AttendanceColors.holiday),
                       ],
                     ),
 
